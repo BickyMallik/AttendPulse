@@ -21,7 +21,7 @@ public class AttendanceSession {
     @JoinColumn(name = "subject_id")
     private Subject subject;
 
-    private String optCode;
+    private String otpCode;
     private LocalDateTime optExpiresAt;
     private Boolean isLocked;
     private Integer maxCount;
