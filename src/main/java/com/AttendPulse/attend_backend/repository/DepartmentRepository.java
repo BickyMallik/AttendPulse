@@ -1,4 +1,7 @@
 package com.AttendPulse.attend_backend.repository;
 
-public class DepartmentRepository {
+import com.AttendPulse.attend_backend.entity.Department;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface DepartmentRepository extends JpaRepository<Department, Long> {
 }

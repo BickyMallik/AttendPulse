@@ -22,7 +22,7 @@ public class AttendanceSession {
     private Subject subject;
 
     private String otpCode;
-    private LocalDateTime optExpiresAt;
+    private LocalDateTime otpExpiresAt;
     private Boolean isLocked;
     private Integer maxCount;
     private LocalDateTime sessionDate;
