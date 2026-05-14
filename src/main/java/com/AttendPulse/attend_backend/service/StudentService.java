@@ -19,6 +19,7 @@ public class StudentService {
     @Autowired private AttendanceSessionRepository sessionRepository;
     @Autowired private AttendanceRecordRepository recordRepository;
     @Autowired private EnrollmentRepository enrollmentRepository;
+    @Autowired private EmailService emailService;
 
     public String markAttendance(MarkAttendanceRequest request,
                                  String studentEmail,
@@ -26,13 +27,18 @@ public class StudentService {
 
         User user = userRepository.findByEmail(studentEmail)
                 .orElseThrow(() -> new RuntimeException("User not found!"));
+
         Student student = studentRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new RuntimeException("Student not found!"));
 
+        // ✅ Use sessionId instead of OTP lookup
+        AttendanceSession session = sessionRepository.findById(request.getSessionId())
+                .orElseThrow(() -> new RuntimeException("Session not found!"));
 
-        AttendanceSession session = sessionRepository.findByOtpCode(request.getOtpCode())
-                .orElseThrow(() -> new RuntimeException("Invalid OTP!"));
-
+        // ✅ OTP validation
+        if (!session.getOtpCode().equals(request.getOtpCode())) {
+            return "Invalid OTP!";
+        }
 
         if (LocalDateTime.now().isAfter(session.getOtpExpiresAt())) {
             return "OTP expired!";
@@ -42,21 +48,17 @@ public class StudentService {
             return "Session is locked!";
         }
 
-        long currentCount = recordRepository.findBySessionId(session.getId()).size();
-        if (currentCount >= session.getMaxCount()) {
-            session.setIsLocked(true);
-            sessionRepository.save(session);
-            return "Max attendance count reached!";
+        // ✅ ENROLLMENT CHECK (IMPORTANT)
+        boolean enrolled = enrollmentRepository
+                .existsByStudentIdAndSubjectId(student.getId(), session.getSubject().getId());
+
+        if (!enrolled) {
+            return "You are not enrolled in this subject!";
         }
 
         if (recordRepository.existsByStudentIdAndSessionId(student.getId(), session.getId())) {
             return "Attendance already marked!";
         }
-
-        boolean isProxy = isProxySuspected(ipAddress,
-                request.getDeviceFingerprint(),
-                session.getId(),
-                LocalDateTime.now());
 
         AttendanceRecord record = new AttendanceRecord();
         record.setStudent(student);
@@ -64,12 +66,10 @@ public class StudentService {
         record.setMarkedAt(LocalDateTime.now());
         record.setIpAddress(ipAddress);
         record.setDeviceFingerprint(request.getDeviceFingerprint());
-        record.setIsProxyFlagged(isProxy);
+        record.setIsProxyFlagged(false);
+
         recordRepository.save(record);
 
-        if (isProxy) {
-            return "Attendance marked but flagged as possible proxy!";
-        }
         return "Attendance marked successfully!";
     }
 

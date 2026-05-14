@@ -28,17 +28,17 @@ public class StudentController {
                 studentService.markAttendance(request, auth.getName(), ip));
     }
 
+    @GetMapping("/attendance/overall")
+    public ResponseEntity<Map<String, Object>> getOverallAttendance(Authentication auth) {
+        return ResponseEntity.ok(
+                studentService.getOverallAttendance(auth.getName()));
+    }
+
     @GetMapping("/attendance/{subjectId}")
     public ResponseEntity<Map<String, Object>> getSubjectAttendance(
             @PathVariable Long subjectId,
             Authentication auth) {
         return ResponseEntity.ok(
                 studentService.getSubjectAttendance(auth.getName(), subjectId));
-    }
-
-    @GetMapping("/attendance/overall")
-    public ResponseEntity<Map<String, Object>> getOverallAttendance(Authentication auth) {
-        return ResponseEntity.ok(
-                studentService.getOverallAttendance(auth.getName()));
     }
 }

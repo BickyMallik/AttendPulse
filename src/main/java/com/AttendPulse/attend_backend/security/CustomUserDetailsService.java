@@ -20,6 +20,16 @@ public class CustomUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
+        // Block pending/rejected students
+        if (user.getRole() == User.Role.STUDENT) {
+            if (user.getStatus() == null ||user.getStatus() == User.Status.PENDING) {
+                throw new UsernameNotFoundException("Account pending teacher approval!");
+            }
+            if (user.getStatus() == User.Status.REJECTED) {
+                throw new UsernameNotFoundException("Account rejected by teacher!");
+            }
+        }
+
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),

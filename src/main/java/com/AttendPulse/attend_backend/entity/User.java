@@ -35,4 +35,11 @@ public class User {
     public enum Role {
         TEACHER, STUDENT
     }
+
+    @Enumerated(EnumType.STRING)
+    private Status status;
+
+    public enum Status {
+        PENDING, APPROVED, REJECTED
+    }
 }

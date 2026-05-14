@@ -33,4 +33,6 @@ public class Subject {
     private Integer semester;
 
     private String sessionLabel;
+
+    private String section;
 }

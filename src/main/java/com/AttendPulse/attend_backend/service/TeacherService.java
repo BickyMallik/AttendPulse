@@ -1,5 +1,7 @@
 package com.AttendPulse.attend_backend.service;
 
+import com.AttendPulse.attend_backend.entity.AttendanceRecord;
+import com.AttendPulse.attend_backend.entity.User;
 import com.AttendPulse.attend_backend.dto.AttendanceSessionRequest;
 import com.AttendPulse.attend_backend.dto.StudentRequest;
 import com.AttendPulse.attend_backend.dto.SubjectRequest;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Service
@@ -22,7 +25,9 @@ public class TeacherService {
     @Autowired private StudentRepository studentRepository;
     @Autowired private EnrollmentRepository enrollmentRepository;
     @Autowired private AttendanceSessionRepository sessionRepository;
+    @Autowired private AttendanceRecordRepository recordRepository;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private EmailService emailService;
 
 
     public Subject addSubject(SubjectRequest request, String teacherEmail) {
@@ -88,6 +93,7 @@ public class TeacherService {
     }
 
     public AttendanceSession startSession(AttendanceSessionRequest request, String teacherEmail) {
+
         User teacher = userRepository.findByEmail(teacherEmail)
                 .orElseThrow(() -> new RuntimeException("Teacher not found!"));
 
@@ -105,12 +111,24 @@ public class TeacherService {
         session.setSessionDate(LocalDateTime.now());
         session.setTeacher(teacher);
 
-        return sessionRepository.save(session);
+        AttendanceSession savedSession = sessionRepository.save(session);
+
+        List<Enrollment> enrollments = enrollmentRepository.findBySubjectId(subject.getId());
+
+        for (Enrollment e : enrollments) {
+            String email = e.getStudent().getUser().getEmail();
+            emailService.sendOtpEmail(email, otp);
+        }
+
+        return savedSession;
     }
 
     public String lockSession(Long sessionId) {
         AttendanceSession session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new RuntimeException("Session not found!"));
+        if (session.getIsLocked()) {
+            return "Session already locked!";
+        }
         session.setIsLocked(true);
         sessionRepository.save(session);
         return "Session locked!";
@@ -118,5 +136,87 @@ public class TeacherService {
 
     public List<AttendanceSession> getSessionsBySubject(Long subjectId) {
         return sessionRepository.findBySubjectId(subjectId);
+    }
+
+    public List<User> getPendingStudents() {
+        return userRepository.findByRole(User.Role.STUDENT)
+                .stream()
+                .filter(u -> u.getStatus() == null || u.getStatus() == User.Status.PENDING)
+                .toList();
+    }
+
+    public String approveStudent(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found!"));
+        user.setStatus(User.Status.APPROVED);
+        userRepository.save(user);
+        emailService.sendApprovalNotification(user.getEmail(), user.getName());
+        return "Student approved!";
+    }
+
+    public String rejectStudent(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found!"));
+        user.setStatus(User.Status.REJECTED);
+        userRepository.save(user);
+        emailService.sendRejectionNotification(user.getEmail(), user.getName());
+        return "Student rejected!";
+    }
+
+    public List<Student> getAllStudents() {
+        return studentRepository.findAll();
+    }
+
+    public List<Subject> getAllSubjects(String teacherEmail) {
+        User teacher = userRepository.findByEmail(teacherEmail)
+                .orElseThrow(() -> new RuntimeException("Teacher not found!"));
+        return subjectRepository.findByTeacherId(teacher.getId());
+    }
+
+    public Map<String, Object> getWeekWiseAttendance(Long subjectId) {
+        List<AttendanceSession> sessions = sessionRepository.findBySubjectId(subjectId);
+        Map<String, Long> weekMap = new java.util.LinkedHashMap<>();
+
+        for (AttendanceSession session : sessions) {
+            if (session.getSessionDate() != null) {
+                // Get week label like "Week 1", "Week 2"
+                java.time.LocalDate date = session.getSessionDate().toLocalDate();
+                int weekNum = date.get(java.time.temporal.WeekFields.ISO.weekOfYear());
+                String weekLabel = "Week " + weekNum;
+                long count = recordRepository.findBySessionId(session.getId()).size();
+                weekMap.merge(weekLabel, count, Long::sum);
+            }
+        }
+
+        Map<String, Object> result = new java.util.HashMap<>();
+        result.put("weekWise", weekMap);
+        result.put("totalSessions", sessions.size());
+        return result;
+    }
+
+    public List<Student> getStudentsBySubject(Long subjectId) {
+        List<Enrollment> enrollments = enrollmentRepository.findBySubjectId(subjectId);
+        return enrollments.stream()
+                .map(Enrollment::getStudent)
+                .toList();
+    }
+
+    public List<AttendanceRecord> getFlaggedRecords(String teacherEmail) {
+        User teacher = userRepository.findByEmail(teacherEmail)
+                .orElseThrow(() -> new RuntimeException("Teacher not found!"));
+        List<Subject> subjects = subjectRepository.findByTeacherId(teacher.getId());
+        List<AttendanceRecord> flagged = new java.util.ArrayList<>();
+        for (Subject subject : subjects) {
+            List<AttendanceSession> sessions = sessionRepository.findBySubjectId(subject.getId());
+            for (AttendanceSession session : sessions) {
+                List<AttendanceRecord> records = recordRepository.findBySessionId(session.getId());
+                for (AttendanceRecord record : records) {
+                    if (Boolean.TRUE.equals(record.getIsProxyFlagged())) {
+                        flagged.add(record);
+                    }
+                }
+            }
+        }
+        return flagged;
     }
 }

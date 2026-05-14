@@ -28,4 +28,6 @@ public class Student {
     private Department department;
 
     private Integer batchYear;
+
+    private String section;
 }
