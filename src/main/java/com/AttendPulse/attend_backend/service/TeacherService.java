@@ -117,7 +117,8 @@ public class TeacherService {
 
         for (Enrollment e : enrollments) {
             String email = e.getStudent().getUser().getEmail();
-            emailService.sendOtpEmail(email, otp);
+            String studentName = e.getStudent().getUser().getName();
+            emailService.sendOtpEmail(email, studentName, otp, savedSession.getId());
         }
 
         return savedSession;

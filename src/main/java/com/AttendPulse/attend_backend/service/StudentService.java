@@ -70,6 +70,14 @@ public class StudentService {
 
         recordRepository.save(record);
 
+        if (session.getMaxCount() != null && session.getMaxCount() > 0) {
+            long markedCount = recordRepository.countBySessionId(session.getId());
+            if (markedCount >= session.getMaxCount()) {
+                session.setIsLocked(true);
+                sessionRepository.save(session);
+            }
+        }
+
         return "Attendance marked successfully!";
     }
 
