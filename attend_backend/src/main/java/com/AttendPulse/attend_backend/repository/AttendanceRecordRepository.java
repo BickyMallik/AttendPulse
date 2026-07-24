@@ -11,7 +11,7 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     boolean existsByStudentIdAndSessionId(Long studentId, Long sessionId);
     long countBySessionIdAndIpAddress(Long sessionId, String ipAddress);
     long countBySessionIdAndDeviceFingerprint(Long sessionId, String deviceFingerprint);
-    long countBySessionIdAndMarkedAtAfter(Long sessionId, LocalDateTime time);
+    long countBySessionIdAndMarkedAtAfter(Long sessionId, LocalDateTime markedAt);
     long countBySessionId(Long sessionId);
     List<AttendanceRecord> findByStudentIdAndSession_Subject_Id(Long studentId, Long subjectId);
     List<AttendanceRecord> findBySessionIdAndMarkedAtBetween(

@@ -63,10 +63,17 @@ public class StudentService {
         AttendanceRecord record = new AttendanceRecord();
         record.setStudent(student);
         record.setSession(session);
-        record.setMarkedAt(LocalDateTime.now());
         record.setIpAddress(ipAddress);
         record.setDeviceFingerprint(request.getDeviceFingerprint());
-        record.setIsProxyFlagged(false);
+        LocalDateTime markedAt = LocalDateTime.now();
+        record.setMarkedAt(markedAt);
+        boolean proxyFlagged = isProxySuspected(
+                ipAddress,
+                request.getDeviceFingerprint(),
+                session.getId(),
+                markedAt
+        );
+        record.setIsProxyFlagged(proxyFlagged);
 
         recordRepository.save(record);
 
@@ -84,9 +91,9 @@ public class StudentService {
     private boolean isProxySuspected(String ip, String deviceId,
                                      Long sessionId, LocalDateTime markedAt) {
         // Rule 1: Same IP used before in this session
-        if (recordRepository.countBySessionIdAndIpAddress(sessionId, ip) > 0) {
-            return true;
-        }
+//        if (recordRepository.countBySessionIdAndIpAddress(sessionId, ip) > 0) {
+//            return true;
+//        }
         // Rule 2: Same device fingerprint used before
         if (recordRepository.countBySessionIdAndDeviceFingerprint(sessionId, deviceId) > 0) {
             return true;
