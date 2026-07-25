@@ -11,4 +11,7 @@ public class AttendanceSessionRequest {
 
     @NotNull
     private Integer maxCount;
+
+    private Double teacherLatitude;
+    private Double teacherLongitude;
 }

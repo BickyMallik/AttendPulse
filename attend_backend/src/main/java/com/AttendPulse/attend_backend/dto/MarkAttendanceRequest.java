@@ -15,4 +15,7 @@ public class MarkAttendanceRequest {
 
     @NotBlank
     private String deviceFingerprint;
+
+    private Double studentLatitude;
+    private Double studentLongitude;
 }

@@ -30,4 +30,7 @@ public class AttendanceSession {
     @ManyToOne
     @JoinColumn(name = "teacher_id")
     private User teacher;
+
+    private Double teacherLatitude;
+    private Double teacherLongitude;
 }

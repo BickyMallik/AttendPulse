@@ -60,10 +60,34 @@ public class StudentService {
             return "Attendance already marked!";
         }
 
+        // GPS Geofencing check
+        if (session.getTeacherLatitude() != null && session.getTeacherLongitude() != null
+                && request.getStudentLatitude() != null && request.getStudentLongitude() != null) {
+            double distance = calculateDistance(
+                    session.getTeacherLatitude(), session.getTeacherLongitude(),
+                    request.getStudentLatitude(), request.getStudentLongitude()
+            );
+            if (distance > 100) {
+                return "You are too far from the classroom! Distance: " + (int) distance + "m";
+            }
+        }
+
+        LocalDateTime markedAt = LocalDateTime.now();
+        boolean proxyFlagged = isProxySuspected(
+                ipAddress,
+                request.getDeviceFingerprint(),
+                session.getId(),
+                markedAt
+        );
+
+        if (proxyFlagged) {
+            return "Proxy attendance detected! Your device was already used in this session.";
+        }
+
         AttendanceRecord record = new AttendanceRecord();
         record.setStudent(student);
         record.setSession(session);
-        record.setMarkedAt(LocalDateTime.now());
+        record.setMarkedAt(markedAt);
         record.setIpAddress(ipAddress);
         record.setDeviceFingerprint(request.getDeviceFingerprint());
         record.setIsProxyFlagged(false);
@@ -150,5 +174,15 @@ public class StudentService {
         result.put("totalAttended", totalAttended);
         result.put("overallPercentage", Math.round(percentage * 100.0) / 100.0);
         return result;
+    }
+
+    //Haversine distance formula
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2){
+        final int R = 6371000; // Earth radius in meters
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 }

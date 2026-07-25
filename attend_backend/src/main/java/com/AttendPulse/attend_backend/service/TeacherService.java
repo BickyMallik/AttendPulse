@@ -110,6 +110,8 @@ public class TeacherService {
         session.setMaxCount(request.getMaxCount());
         session.setSessionDate(LocalDateTime.now());
         session.setTeacher(teacher);
+        session.setTeacherLatitude(request.getTeacherLatitude());
+        session.setTeacherLongitude(request.getTeacherLongitude());
 
         AttendanceSession savedSession = sessionRepository.save(session);
 
