@@ -2,7 +2,7 @@
 
 > Smart Attendance Management System — REST API built with Spring Boot
 
-[![Java](https://img.shields.io/badge/Java-17-orange)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-21-orange)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen)](https://spring.io/projects/spring-boot)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)](https://www.postgresql.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
